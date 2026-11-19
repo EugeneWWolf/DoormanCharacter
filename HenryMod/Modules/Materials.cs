@@ -1,11 +1,13 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace HenryMod.Modules
+namespace DoormanMod.Modules
 {
     internal static class Materials
     {
+#pragma warning disable IDE0044 // Добавить модификатор только для чтения
         private static List<Material> cachedMaterials = new List<Material>();
+#pragma warning restore IDE0044 // Добавить модификатор только для чтения
 
         internal static Shader hotpoo = RoR2.LegacyResourcesAPI.Load<Shader>("Shaders/Deferred/HGStandard");
 

@@ -4,19 +4,19 @@ using UnityEngine;
 using System.Collections.Generic;
 using RoR2.Skills;
 
-namespace HenryMod.Modules.Characters
+namespace DoormanMod.Modules.Characters
 {
     public abstract class SurvivorBase<T> : CharacterBase<T> where T : SurvivorBase<T>, new()
     {
-        public abstract string masterName { get; }
+        public abstract string MasterName { get; }
 
-        public abstract string displayPrefabName { get; }
+        public abstract string DisplayPrefabName { get; }
 
-        public abstract string survivorTokenPrefix { get; }
+        public abstract string SurvivorTokenPrefix { get; }
 
-        public abstract UnlockableDef characterUnlockableDef { get; }
+        public abstract UnlockableDef CharacterUnlockableDef { get; }
 
-        public abstract GameObject displayPrefab { get; protected set; }
+        public abstract GameObject DisplayPrefab { get; protected set; }
 
         public override void InitializeCharacter()
         {
@@ -29,18 +29,18 @@ namespace HenryMod.Modules.Characters
 
         protected virtual void InitializeDisplayPrefab()
         {
-            displayPrefab = Prefabs.CreateDisplayPrefab(assetBundle, displayPrefabName, bodyPrefab);
+            DisplayPrefab = Prefabs.CreateDisplayPrefab(AssetBundle, DisplayPrefabName, BodyPrefab);
         }
 
         protected virtual void InitializeSurvivor()
         {
-            Content.CreateSurvivor(bodyPrefab, displayPrefab, bodyInfo.bodyColor, survivorTokenPrefix, characterUnlockableDef, bodyInfo.sortPosition);
+            Content.CreateSurvivor(BodyPrefab, DisplayPrefab, BodyInfo.bodyColor, SurvivorTokenPrefix, CharacterUnlockableDef, BodyInfo.sortPosition);
         }
 
         #region CharacterSelectSurvivorPreviewDisplayController
         protected virtual void AddCssPreviewSkill(int indexFromEditor, SkillFamily skillFamily, SkillDef skillDef)
         {
-            CharacterSelectSurvivorPreviewDisplayController CSSPreviewDisplayConroller = displayPrefab.GetComponent<CharacterSelectSurvivorPreviewDisplayController>();
+            CharacterSelectSurvivorPreviewDisplayController CSSPreviewDisplayConroller = DisplayPrefab.GetComponent<CharacterSelectSurvivorPreviewDisplayController>();
             if (!CSSPreviewDisplayConroller)
             {
                 Log.Error("trying to add skillChangeResponse to null CharacterSelectSurvivorPreviewDisplayController.\nMake sure you created one on your Display prefab in editor");
@@ -53,7 +53,7 @@ namespace HenryMod.Modules.Characters
 
         protected virtual void AddCssPreviewSkin(int indexFromEditor, SkinDef skinDef)
         {
-            CharacterSelectSurvivorPreviewDisplayController CSSPreviewDisplayConroller = displayPrefab.GetComponent<CharacterSelectSurvivorPreviewDisplayController>();
+            CharacterSelectSurvivorPreviewDisplayController CSSPreviewDisplayConroller = DisplayPrefab.GetComponent<CharacterSelectSurvivorPreviewDisplayController>();
             if (!CSSPreviewDisplayConroller)
             {
                 Log.Error("trying to add skinChangeResponse to null CharacterSelectSurvivorPreviewDisplayController.\nMake sure you created one on your Display prefab in editor");
@@ -65,15 +65,15 @@ namespace HenryMod.Modules.Characters
 
         protected virtual void FinalizeCSSPreviewDisplayController()
         {
-            if (!displayPrefab)
+            if (!DisplayPrefab)
                 return;
 
-            CharacterSelectSurvivorPreviewDisplayController CSSPreviewDisplayConroller = displayPrefab.GetComponent<CharacterSelectSurvivorPreviewDisplayController>();
+            CharacterSelectSurvivorPreviewDisplayController CSSPreviewDisplayConroller = DisplayPrefab.GetComponent<CharacterSelectSurvivorPreviewDisplayController>();
             if (!CSSPreviewDisplayConroller)
                 return;
 
             //set body prefab
-            CSSPreviewDisplayConroller.bodyPrefab = bodyPrefab;
+            CSSPreviewDisplayConroller.bodyPrefab = BodyPrefab;
 
             //clear list of null entries
             List<CharacterSelectSurvivorPreviewDisplayController.SkillChangeResponse> newlist = new List<CharacterSelectSurvivorPreviewDisplayController.SkillChangeResponse>();

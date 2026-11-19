@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace HenryMod.Modules
+namespace DoormanMod.Modules
 {
     internal static class ItemDisplays
     {
@@ -160,10 +160,12 @@ namespace HenryMod.Modules
         {
             Object itemDef = RoR2.LegacyResourcesAPI.Load<ItemDef>("ItemDefs/" + itemName);
 
+#pragma warning disable IDE0270 // Используйте выражение объединения
             if (itemDef == null)
             {
                 itemDef = RoR2.LegacyResourcesAPI.Load<EquipmentDef>("EquipmentDefs/" + itemName);
             }
+#pragma warning restore IDE0270 // Используйте выражение объединения
 
             if (itemDef == null)
             {

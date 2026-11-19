@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 
-namespace HenryMod.Modules.BaseStates
+namespace DoormanMod.Modules.BaseStates
 {
     public abstract class BaseMeleeAttack : BaseSkillState, SteppedSkillDef.IStepSetter
     {
@@ -59,19 +59,21 @@ namespace HenryMod.Modules.BaseStates
 
             PlayAttackAnimation();
 
-            attack = new OverlapAttack();
-            attack.damageType = damageType;
-            attack.attacker = gameObject;
-            attack.inflictor = gameObject;
-            attack.teamIndex = GetTeam();
-            attack.damage = damageCoefficient * damageStat;
-            attack.procCoefficient = procCoefficient;
-            attack.hitEffectPrefab = hitEffectPrefab;
-            attack.forceVector = bonusForce;
-            attack.pushAwayForce = pushForce;
-            attack.hitBoxGroup = FindHitBoxGroup(hitboxGroupName);
-            attack.isCrit = RollCrit();
-            attack.impactSound = impactSound;
+            attack = new OverlapAttack
+            {
+                damageType = damageType,
+                attacker = gameObject,
+                inflictor = gameObject,
+                teamIndex = GetTeam(),
+                damage = damageCoefficient * damageStat,
+                procCoefficient = procCoefficient,
+                hitEffectPrefab = hitEffectPrefab,
+                forceVector = bonusForce,
+                pushAwayForce = pushForce,
+                hitBoxGroup = FindHitBoxGroup(hitboxGroupName),
+                isCrit = RollCrit(),
+                impactSound = impactSound
+            };
 
             ModifyOverlapAttack(attack);
         }

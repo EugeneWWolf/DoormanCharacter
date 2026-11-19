@@ -3,34 +3,34 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace HenryMod.Modules.Characters
+namespace DoormanMod.Modules.Characters
 {
     public abstract class CharacterBase<T> where T : CharacterBase<T>, new()
     {
-        public abstract string assetBundleName { get; }
+        public abstract string AssetBundleName { get; }
 
-        public abstract string bodyName { get; }
-        public abstract string modelPrefabName { get; }
+        public abstract string BodyName { get; }
+        public abstract string ModelPrefabName { get; }
         
-        public abstract BodyInfo bodyInfo { get; }
+        public abstract BodyInfo BodyInfo { get; }
 
-        public virtual CustomRendererInfo[] customRendererInfos { get; }
+        public virtual CustomRendererInfo[] CustomRendererInfos { get; }
 
-        public virtual ItemDisplaysBase itemDisplays { get; }
+        public virtual ItemDisplaysBase ItemDisplays { get; }
 
-        public static T instance { get; private set; }
+        public static T Instance { get; private set; }
 
-        public abstract AssetBundle assetBundle { get; protected set; }
+        public abstract AssetBundle AssetBundle { get; protected set; }
 
-        public abstract GameObject bodyPrefab                 {get; protected set;}
-        public abstract CharacterBody prefabCharacterBody     {get; protected set;}
-        public abstract GameObject characterModelObject       {get; protected set;}
-        public abstract CharacterModel prefabCharacterModel   {get; protected set;}
+        public abstract GameObject BodyPrefab                 {get; protected set;}
+        public abstract CharacterBody PrefabCharacterBody     {get; protected set;}
+        public abstract GameObject CharacterModelObject       {get; protected set;}
+        public abstract CharacterModel PrefabCharacterModel   {get; protected set;}
 
         public virtual void Initialize()
         {
-            instance = this as T;
-            assetBundle = Asset.LoadAssetBundle(assetBundleName);
+            Instance = this as T;
+            AssetBundle = Asset.LoadAssetBundle(AssetBundleName);
 
             InitializeCharacter();
         }
@@ -44,28 +44,28 @@ namespace HenryMod.Modules.Characters
 
         protected virtual void InitializeCharacterBodyPrefab()
         {
-            characterModelObject = Prefabs.LoadCharacterModel(assetBundle, modelPrefabName);
+            CharacterModelObject = Prefabs.LoadCharacterModel(AssetBundle, ModelPrefabName);
 
-            bodyPrefab = Modules.Prefabs.CreateBodyPrefab(characterModelObject, bodyInfo);
-            prefabCharacterBody = bodyPrefab.GetComponent<CharacterBody>();
+            BodyPrefab = Modules.Prefabs.CreateBodyPrefab(CharacterModelObject, BodyInfo);
+            PrefabCharacterBody = BodyPrefab.GetComponent<CharacterBody>();
 
-            prefabCharacterModel = Modules.Prefabs.SetupCharacterModel(bodyPrefab, customRendererInfos);
+            PrefabCharacterModel = Modules.Prefabs.SetupCharacterModel(BodyPrefab, CustomRendererInfos);
         }
 
         public virtual void InitializeItemDisplays() {
             ItemDisplayRuleSet itemDisplayRuleSet = ScriptableObject.CreateInstance<ItemDisplayRuleSet>();
-            itemDisplayRuleSet.name = "idrs" + bodyName;
+            itemDisplayRuleSet.name = "idrs" + BodyName;
             
-            prefabCharacterModel.itemDisplayRuleSet = itemDisplayRuleSet;
+            PrefabCharacterModel.itemDisplayRuleSet = itemDisplayRuleSet;
 
-            if (itemDisplays != null) {
+            if (ItemDisplays != null) {
                 Modules.ItemDisplays.queuedDisplays++;
                 RoR2.ContentManagement.ContentManager.onContentPacksAssigned += SetItemDisplays;
             }
         }
 
         public void SetItemDisplays(HG.ReadOnlyArray<RoR2.ContentManagement.ReadOnlyContentPack> obj) {
-            itemDisplays.SetItemDisplays(prefabCharacterModel.itemDisplayRuleSet);
+            ItemDisplays.SetItemDisplays(PrefabCharacterModel.itemDisplayRuleSet);
         }
 
         public abstract void InitializeEntityStateMachines();
@@ -152,7 +152,7 @@ namespace HenryMod.Modules.Characters
         public float cameraParamsDepth = -10;
 
         private CharacterCameraParams _cameraParams;
-        public CharacterCameraParams cameraParams
+        public CharacterCameraParams CameraParams
         {
             get
             {

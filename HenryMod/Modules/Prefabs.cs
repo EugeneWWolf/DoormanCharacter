@@ -2,14 +2,14 @@
 using RoR2;
 using System.Collections.Generic;
 using UnityEngine;
-using HenryMod.Modules.Characters;
+using DoormanMod.Modules.Characters;
 using RoR2.CharacterAI;
 using static RoR2.CharacterAI.AISkillDriver;
 using RoR2.Skills;
 using System;
 using System.Linq;
 
-namespace HenryMod.Modules
+namespace DoormanMod.Modules
 {
     // module for creating body prefabs and whatnot
     // recommended to simply avoid touching this unless you REALLY need to
@@ -266,7 +266,7 @@ namespace HenryMod.Modules
         private static void SetupCameraTargetParams(GameObject prefab, BodyInfo bodyInfo)
         {
             CameraTargetParams cameraTargetParams = prefab.GetComponent<CameraTargetParams>();
-            cameraTargetParams.cameraParams = bodyInfo.cameraParams;
+            cameraTargetParams.cameraParams = bodyInfo.CameraParams;
             cameraTargetParams.cameraPivotTransform = prefab.transform.Find("CameraPivot");
         }
 
@@ -595,10 +595,12 @@ namespace HenryMod.Modules
             baseAI.stateMachine = stateMachine;
 
             CharacterMaster characterMaster = newMaster.GetComponent<CharacterMaster>();
-            if(characterMaster == null)
+#pragma warning disable IDE0270 // Используйте выражение объединения
+            if (characterMaster == null)
             {
                 characterMaster = newMaster.AddComponent<CharacterMaster>();
             }
+#pragma warning restore IDE0270 // Используйте выражение объединения
             characterMaster.bodyPrefab = bodyPrefab;
             characterMaster.teamIndex = TeamIndex.Monster;
 

@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace HenryMod.Modules
+namespace DoormanMod.Modules
 {
     internal static class Skins
     {
@@ -65,7 +65,7 @@ namespace HenryMod.Modules
             internal string Name;
         }
 
-        private static CharacterModel.RendererInfo[] getRendererMaterials(CharacterModel.RendererInfo[] defaultRenderers, params Material[] materials)
+        private static CharacterModel.RendererInfo[] GetRendererMaterials(CharacterModel.RendererInfo[] defaultRenderers, params Material[] materials)
         {
             CharacterModel.RendererInfo[] newRendererInfos = new CharacterModel.RendererInfo[defaultRenderers.Length];
             defaultRenderers.CopyTo(newRendererInfos, 0);
@@ -97,7 +97,7 @@ namespace HenryMod.Modules
         /// <param name="defaultRendererInfos">your skindef's rendererinfos to access the renderers</param>
         /// <param name="meshes">name of the mesh assets in your project</param>
         /// <returns></returns>
-        internal static SkinDef.MeshReplacement[] getMeshReplacements(AssetBundle assetBundle, CharacterModel.RendererInfo[] defaultRendererInfos, params string[] meshes)
+        internal static SkinDef.MeshReplacement[] GetMeshReplacements(AssetBundle assetBundle, CharacterModel.RendererInfo[] defaultRendererInfos, params string[] meshes)
         {
 
             List<SkinDef.MeshReplacement> meshReplacements = new List<SkinDef.MeshReplacement>();
