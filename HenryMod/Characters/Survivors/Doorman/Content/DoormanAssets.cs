@@ -11,8 +11,11 @@ namespace DoormanMod.Survivors.Doorman
         // particle effects
         public static GameObject swordSwingEffect;
         public static GameObject swordHitImpactEffect;
-
         public static GameObject bombExplosionEffect;
+
+        public static GameObject bellProjectilePrefab;
+        public static GameObject cartProjectilePrefab;
+        public static GameObject doorPrefab;
 
         // networked hit sounds
         public static NetworkSoundEventDef swordHitSoundEvent;

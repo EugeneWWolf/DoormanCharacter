@@ -1,111 +1,99 @@
 ﻿using EntityStates;
-using DoormanMod.Survivors.Doorman;
 using RoR2;
 using UnityEngine;
+using EntityStates.Commando.CommandoWeapon; // Временные эффекты Commando
 
 namespace DoormanMod.Survivors.Doorman.SkillStates
 {
     public class Shoot : BaseSkillState
     {
-        public static float damageCoefficient = DoormanStaticValues.gunDamageCoefficient;
-        public static float procCoefficient = 1f;
-        public static float baseDuration = 0.6f;
-        //delay on firing is usually ass-feeling. only set this if you know what you're doing
-        public static float firePercentTime = 0.0f;
-        public static float force = 800f;
-        public static float recoil = 3f;
-        public static float range = 256f;
-        public static GameObject tracerEffectPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/Tracers/TracerGoldGat");
+        public static float BaseDuration = 0.2f; // Задержка между выстрелами (можно менять в EntityState, либо в SkillDef)
+        public static float DamageCoefficient = 1f; // Базовый урон (100%)
 
         private float duration;
-        private float fireTime;
-        private bool hasFired;
-        private string muzzleString;
+        private Ray aimRay;
+
+        // Временные эффекты для теста (замени на свои позже)
+        public GameObject hitEffectPrefab = FireBarrage.hitEffectPrefab;
+        public GameObject tracerEffectPrefab = FireBarrage.tracerEffectPrefab;
 
         public override void OnEnter()
         {
             base.OnEnter();
-            duration = baseDuration / attackSpeedStat;
-            fireTime = firePercentTime * duration;
-            characterBody.SetAimTimer(2f);
-            muzzleString = "Muzzle";
 
-            PlayAnimation("LeftArm, Override", "ShootGun", "ShootGun.playbackRate", 1.8f);
+            // Рассчитываем длительность с учётом скорости атаки (attackSpeedStat)
+            this.duration = BaseDuration / base.attackSpeedStat;
+
+            // Получаем луч прицела игрока
+            this.aimRay = base.GetAimRay();
+
+            // Запускаем режим прицеливания (камера немного приближается)
+            base.StartAimMode(aimRay, 2f, false);
+
+            // Проигрываем анимацию (используем анимацию Commando "FirePistol, Right")
+            base.PlayAnimation("Gesture Additive, Right", "FirePistol, Right");
+
+            // Воспроизводим звук выстрела (пока от Commando)
+            Util.PlaySound(FireBarrage.fireBarrageSoundString, base.gameObject);
+
+            // Добавляем отдачу камеры (по желанию можно убрать)
+            base.AddRecoil(-0.6f, 0.6f, -0.6f, 0.6f);
+
+            // Спавним эффект вспышки на дуле оружия
+            if (FireBarrage.effectPrefab)
+            {
+                EffectManager.SimpleMuzzleFlash(FireBarrage.effectPrefab, base.gameObject, "MuzzleRight", false);
+            }
+
+            // Самое главное: выпускаем пулю (только на сервере/хосте)
+            if (base.isAuthority)
+            {
+                FireBullet();
+            }
         }
 
-        public override void OnExit()
+        private void FireBullet()
         {
-            base.OnExit();
+            new BulletAttack
+            {
+                owner = base.gameObject,
+                weapon = base.gameObject,
+                origin = this.aimRay.origin,
+                aimVector = this.aimRay.direction,
+                minSpread = 0f,
+                maxSpread = base.characterBody.spreadBloomAngle,
+                bulletCount = 1U,
+                procCoefficient = 1f,
+                damage = base.characterBody.damage * DamageCoefficient,
+                force = 3,
+                falloffModel = BulletAttack.FalloffModel.DefaultBullet,
+                tracerEffectPrefab = this.tracerEffectPrefab,
+                muzzleName = "MuzzleRight",
+                hitEffectPrefab = this.hitEffectPrefab,
+                isCrit = base.RollCrit(),
+                HitEffectNormal = false,
+                stopperMask = LayerIndex.world.mask,
+                smartCollision = true,
+                maxDistance = 300f
+            }.Fire();
         }
 
         public override void FixedUpdate()
         {
             base.FixedUpdate();
 
-            if (fixedAge >= fireTime)
+            // Если время действия состояния истекло и мы на сервере — возвращаемся в обычное состояние (Main)
+            // Это позволяет стрелять очередями, если кнопка зажата (благодаря настройкам SkillDef)
+            if (base.fixedAge >= this.duration && base.isAuthority)
             {
-                Fire();
-            }
-
-            if (fixedAge >= duration && isAuthority)
-            {
-                outer.SetNextStateToMain();
+                this.outer.SetNextStateToMain();
                 return;
-            }
-        }
-
-        private void Fire()
-        {
-            if (!hasFired)
-            {
-                hasFired = true;
-
-                characterBody.AddSpreadBloom(1.5f);
-                EffectManager.SimpleMuzzleFlash(EntityStates.Commando.CommandoWeapon.FirePistol2.muzzleEffectPrefab, gameObject, muzzleString, false);
-                Util.PlaySound("DoormanShootPistol", gameObject);
-
-                if (isAuthority)
-                {
-                    Ray aimRay = GetAimRay();
-                    AddRecoil(-1f * recoil, -2f * recoil, -0.5f * recoil, 0.5f * recoil);
-
-                    new BulletAttack
-                    {
-                        bulletCount = 1,
-                        aimVector = aimRay.direction,
-                        origin = aimRay.origin,
-                        damage = damageCoefficient * damageStat,
-                        damageColorIndex = DamageColorIndex.Default,
-                        damageType = DamageTypeCombo.GenericSecondary,
-                        falloffModel = BulletAttack.FalloffModel.None,
-                        maxDistance = range,
-                        force = force,
-                        hitMask = LayerIndex.CommonMasks.bullet,
-                        minSpread = 0f,
-                        maxSpread = 0f,
-                        isCrit = RollCrit(),
-                        owner = gameObject,
-                        muzzleName = muzzleString,
-                        smartCollision = true,
-                        procChainMask = default,
-                        procCoefficient = procCoefficient,
-                        radius = 0.75f,
-                        sniper = false,
-                        stopperMask = LayerIndex.CommonMasks.bullet,
-                        weapon = null,
-                        tracerEffectPrefab = tracerEffectPrefab,
-                        spreadPitchScale = 1f,
-                        spreadYawScale = 1f,
-                        queryTriggerInteraction = QueryTriggerInteraction.UseGlobal,
-                        hitEffectPrefab = EntityStates.Commando.CommandoWeapon.FirePistol2.hitEffectPrefab,
-                    }.Fire();
-                }
             }
         }
 
         public override InterruptPriority GetMinimumInterruptPriority()
         {
-            return InterruptPriority.PrioritySkill;
+            return InterruptPriority.Skill;
         }
     }
 }

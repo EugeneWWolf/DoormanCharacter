@@ -3,6 +3,10 @@ using DoormanMod.Modules;
 using DoormanMod.Modules.Characters;
 using DoormanMod.Survivors.Doorman.Components;
 using DoormanMod.Survivors.Doorman.SkillStates;
+using ExtraSkillSlots;
+using R2API;
+using R2API.ContentManagement;
+using R2API.Utils;
 using RoR2;
 using RoR2.Skills;
 using System;
@@ -53,19 +57,7 @@ namespace DoormanMod.Survivors.Doorman
 
         public override CustomRendererInfo[] CustomRendererInfos => new CustomRendererInfo[]
         {
-                new CustomRendererInfo
-                {
-                    childName = "SwordModel",
-                    material = AssetBundle.LoadMaterial("matDoorman"),
-                },
-                new CustomRendererInfo
-                {
-                    childName = "GunModel",
-                },
-                new CustomRendererInfo
-                {
-                    childName = "Model",
-                }
+            new CustomRendererInfo { childName = "Model" }
         };
 
         public override UnlockableDef CharacterUnlockableDef => DoormanUnlockables.characterUnlockableDef;
@@ -109,7 +101,7 @@ namespace DoormanMod.Survivors.Doorman
 
             InitializeEntityStateMachines();
             InitializeSkills();
-            InitializeSkins();
+            // InitializeSkins();
             InitializeCharacterMaster();
 
             AdditionalBodySetup();
@@ -159,185 +151,205 @@ namespace DoormanMod.Survivors.Doorman
             AddSpecialSkills();
         }
 
-        //skip if you don't have a passive
-        //also skip if this is your first look at skills
-        private void AddPassiveSkill()
-        {
-            //option 1. fake passive icon just to describe functionality we will implement elsewhere
-            BodyPrefab.GetComponent<SkillLocator>().passiveSkill = new SkillLocator.PassiveSkill
-            {
-                enabled = true,
-                skillNameToken = DOORMAN_PREFIX + "PASSIVE_NAME",
-                skillDescriptionToken = DOORMAN_PREFIX + "PASSIVE_DESCRIPTION",
-                keywordToken = "KEYWORD_STUNNING",
-                icon = AssetBundle.LoadAsset<Sprite>("texPassiveIcon"),
-            };
-
-            //option 2. a new SkillFamily for a passive, used if you want multiple selectable passives
-            GenericSkill passiveGenericSkill = Skills.CreateGenericSkillWithSkillFamily(BodyPrefab, "PassiveSkill");
-            SkillDef passiveSkillDef1 = Skills.CreateSkillDef(new SkillDefInfo
-            {
-                skillName = "DoormanPassive",
-                skillNameToken = DOORMAN_PREFIX + "PASSIVE_NAME",
-                skillDescriptionToken = DOORMAN_PREFIX + "PASSIVE_DESCRIPTION",
-                keywordTokens = new string[] { "KEYWORD_AGILE" },
-                skillIcon = AssetBundle.LoadAsset<Sprite>("texPassiveIcon"),
-
-                //unless you're somehow activating your passive like a skill, none of the following is needed.
-                //but that's just me saying things. the tools are here at your disposal to do whatever you like with
-
-                //activationState = new EntityStates.SerializableEntityStateType(typeof(SkillStates.Shoot)),
-                //activationStateMachineName = "Weapon1",
-                //interruptPriority = EntityStates.InterruptPriority.Skill,
-
-                //baseRechargeInterval = 1f,
-                //baseMaxStock = 1,
-
-                //rechargeStock = 1,
-                //requiredStock = 1,
-                //stockToConsume = 1,
-
-                //resetCooldownTimerOnUse = false,
-                //fullRestockOnAssign = true,
-                //dontAllowPastMaxStocks = false,
-                //mustKeyPress = false,
-                //beginSkillCooldownOnSkillEnd = false,
-
-                //isCombatSkill = true,
-                //canceledFromSprinting = false,
-                //cancelSprintingOnActivation = false,
-                //forceSprintDuringState = false,
-
-            });
-            Skills.AddSkillsToFamily(passiveGenericSkill.skillFamily, passiveSkillDef1);
-        }
 
         //if this is your first look at skilldef creation, take a look at Secondary first
         private void AddPrimarySkills()
         {
-            Skills.CreateGenericSkillWithSkillFamily(BodyPrefab, SkillSlot.Primary);
+            // Создаём SkillDef
+            SkillDef shootSkillDef = Skills.CreateSkillDef(new SkillDefInfo
+            {
+                skillName = "DoormanShoot",
+                skillNameToken = DOORMAN_PREFIX + "PRIMARY_SHOOT_NAME",
+                skillDescriptionToken = DOORMAN_PREFIX + "PRIMARY_SHOOT_DESCRIPTION",
+                skillIcon = null, // Иконку добавишь позже
 
-            //the primary skill is created using a constructor for a typical primary
-            //it is also a SteppedSkillDef. Custom Skilldefs are very useful for custom behaviors related to casting a skill. see ror2's different skilldefs for reference
-            SteppedSkillDef primarySkillDef1 = Skills.CreateSkillDef<SteppedSkillDef>(new SkillDefInfo
-                (
-                    "DoormanSlash",
-                    DOORMAN_PREFIX + "PRIMARY_SLASH_NAME",
-                    DOORMAN_PREFIX + "PRIMARY_SLASH_DESCRIPTION",
-                    AssetBundle.LoadAsset<Sprite>("texPrimaryIcon"),
-                    new EntityStates.SerializableEntityStateType(typeof(SkillStates.SlashCombo)),
-                    "Weapon",
-                    true
-                ));
-            //custom Skilldefs can have additional fields that you can set manually
-            primarySkillDef1.stepCount = 2;
-            primarySkillDef1.stepGraceDuration = 0.5f;
+                // Привязываем наш новый EntityState
+                activationState = new EntityStates.SerializableEntityStateType(typeof(Shoot)),
+                activationStateMachineName = "Weapon", // Стрельба происходит в состоянии "Weapon"
 
-            Skills.AddPrimarySkills(BodyPrefab, primarySkillDef1);
+                interruptPriority = EntityStates.InterruptPriority.Skill,
+
+                // --- Настройки для стрельбы ---
+                baseRechargeInterval = 0f, // Кулдаун не нужен (стреляем постоянно)
+                baseMaxStock = 1,
+                rechargeStock = 1,
+                requiredStock = 1,
+                stockToConsume = 0, // Не тратим "заряды"
+
+                mustKeyPress = false, // АВТОМАТИЧЕСКАЯ СТРЕЛЬБА ПРИ ЗАЖАТИИ (как у Commando)
+                beginSkillCooldownOnSkillEnd = false,
+                isCombatSkill = true,
+                canceledFromSprinting = false,
+                cancelSprintingOnActivation = true, // При стрельбе персонаж перестаёт бежать
+                forceSprintDuringState = false,
+            });
+
+            // Регистрируем SkillDef в игре
+            ContentAddition.AddSkillDef(shootSkillDef);
+
+            // Получаем текущее семейство Primary-способностей нашего персонажа
+            GenericSkill primarySkill = BodyPrefab.GetComponent<SkillLocator>().primary;
+            SkillFamily primaryFamily = primarySkill.skillFamily;
+
+            // Добавляем нашу стрельбу как вариант в Primary
+            Array.Resize(ref primaryFamily.variants, primaryFamily.variants.Length + 1);
+            primaryFamily.variants[primaryFamily.variants.Length - 1] = new SkillFamily.Variant
+            {
+                skillDef = shootSkillDef,
+                unlockableName = "", // Способность доступна сразу
+                viewableNode = new ViewablesCatalog.Node(shootSkillDef.skillNameToken, false, null)
+            };
         }
 
         private void AddSecondarySkills()
         {
             Skills.CreateGenericSkillWithSkillFamily(BodyPrefab, SkillSlot.Secondary);
 
-            //here is a basic skill def with all fields accounted for
-            SkillDef secondarySkillDef1 = Skills.CreateSkillDef(new SkillDefInfo
+            SkillDef bellSkillDef = Skills.CreateSkillDef(new SkillDefInfo
             {
-                skillName = "DoormanGun",
-                skillNameToken = DOORMAN_PREFIX + "SECONDARY_GUN_NAME",
-                skillDescriptionToken = DOORMAN_PREFIX + "SECONDARY_GUN_DESCRIPTION",
-                keywordTokens = new string[] { "KEYWORD_AGILE" },
-                skillIcon = AssetBundle.LoadAsset<Sprite>("texSecondaryIcon"),
-
-                activationState = new EntityStates.SerializableEntityStateType(typeof(SkillStates.Shoot)),
-                activationStateMachineName = "Weapon2",
+                skillName = "DoormanThrowBell",
+                skillNameToken = DOORMAN_PREFIX + "SECONDARY_BELL_NAME",
+                skillDescriptionToken = DOORMAN_PREFIX + "SECONDARY_BELL_DESCRIPTION",
+                skillIcon = AssetBundle.LoadAsset<Sprite>("texBellIcon"),
+                activationState = new EntityStates.SerializableEntityStateType(typeof(ThrowBell)),
+                activationStateMachineName = "Weapon",
                 interruptPriority = EntityStates.InterruptPriority.Skill,
-
-                baseRechargeInterval = 1f,
+                baseRechargeInterval = 4f,
                 baseMaxStock = 1,
-
                 rechargeStock = 1,
                 requiredStock = 1,
                 stockToConsume = 1,
-
                 resetCooldownTimerOnUse = false,
                 fullRestockOnAssign = true,
                 dontAllowPastMaxStocks = false,
-                mustKeyPress = false,
-                beginSkillCooldownOnSkillEnd = false,
-
+                mustKeyPress = true,
+                beginSkillCooldownOnSkillEnd = true,
                 isCombatSkill = true,
                 canceledFromSprinting = false,
                 cancelSprintingOnActivation = false,
                 forceSprintDuringState = false,
-
             });
 
-            Skills.AddSecondarySkills(BodyPrefab, secondarySkillDef1);
+            GenericSkill secondarySkill = BodyPrefab.GetComponent<SkillLocator>().secondary;
+            Skills.AddSkillsToFamily(secondarySkill.skillFamily, bellSkillDef);
         }
 
         private void AddUtiitySkills()
         {
             Skills.CreateGenericSkillWithSkillFamily(BodyPrefab, SkillSlot.Utility);
 
-            //here's a skilldef of a typical movement skill.
-            SkillDef utilitySkillDef1 = Skills.CreateSkillDef(new SkillDefInfo
+            SkillDef doorSkillDef = Skills.CreateSkillDef(new SkillDefInfo
             {
-                skillName = "DoormanRoll",
-                skillNameToken = DOORMAN_PREFIX + "UTILITY_ROLL_NAME",
-                skillDescriptionToken = DOORMAN_PREFIX + "UTILITY_ROLL_DESCRIPTION",
-                skillIcon = AssetBundle.LoadAsset<Sprite>("texUtilityIcon"),
-
-                activationState = new EntityStates.SerializableEntityStateType(typeof(Roll)),
-                activationStateMachineName = "Body",
-                interruptPriority = EntityStates.InterruptPriority.PrioritySkill,
-
-                baseRechargeInterval = 4f,
+                skillName = "DoormanDoorDash",
+                skillNameToken = DOORMAN_PREFIX + "UTILITY_DOOR_NAME",
+                skillDescriptionToken = DOORMAN_PREFIX + "UTILITY_DOOR_DESCRIPTION",
+                skillIcon = null,
+                activationState = new EntityStates.SerializableEntityStateType(typeof(DoorDash)),
+                activationStateMachineName = "Body", // Рывок/телепорт — это движение тела
+                interruptPriority = EntityStates.InterruptPriority.Skill,
+                baseRechargeInterval = 6f,
                 baseMaxStock = 1,
-
                 rechargeStock = 1,
                 requiredStock = 1,
                 stockToConsume = 1,
-
                 resetCooldownTimerOnUse = false,
                 fullRestockOnAssign = true,
                 dontAllowPastMaxStocks = false,
-                mustKeyPress = false,
-                beginSkillCooldownOnSkillEnd = false,
-
+                mustKeyPress = true,
+                beginSkillCooldownOnSkillEnd = true,
                 isCombatSkill = false,
                 canceledFromSprinting = false,
-                cancelSprintingOnActivation = false,
-                forceSprintDuringState = true,
+                cancelSprintingOnActivation = false, // Рывок обычно не отменяет спринт
+                forceSprintDuringState = false,
             });
 
-            Skills.AddUtilitySkills(BodyPrefab, utilitySkillDef1);
+            GenericSkill utilitySkill = BodyPrefab.GetComponent<SkillLocator>().utility;
+            Skills.AddSkillsToFamily(utilitySkill.skillFamily, doorSkillDef);
         }
 
         private void AddSpecialSkills()
         {
             Skills.CreateGenericSkillWithSkillFamily(BodyPrefab, SkillSlot.Special);
 
-            //a basic skill. some fields are omitted and will just have default values
-            SkillDef specialSkillDef1 = Skills.CreateSkillDef(new SkillDefInfo
+            SkillDef cartSkillDef = Skills.CreateSkillDef(new SkillDefInfo
             {
-                skillName = "DoormanBomb",
-                skillNameToken = DOORMAN_PREFIX + "SPECIAL_BOMB_NAME",
-                skillDescriptionToken = DOORMAN_PREFIX + "SPECIAL_BOMB_DESCRIPTION",
-                skillIcon = AssetBundle.LoadAsset<Sprite>("texSpecialIcon"),
-
-                activationState = new EntityStates.SerializableEntityStateType(typeof(SkillStates.ThrowBomb)),
-                //setting this to the "weapon2" EntityStateMachine allows us to cast this skill at the same time primary, which is set to the "weapon" EntityStateMachine
-                activationStateMachineName = "Weapon2", interruptPriority = EntityStates.InterruptPriority.Skill,
-
+                skillName = "DoormanThrowCart",
+                skillNameToken = DOORMAN_PREFIX + "SPECIAL_CART_NAME",
+                skillDescriptionToken = DOORMAN_PREFIX + "SPECIAL_CART_DESCRIPTION",
+                skillIcon = null,
+                activationState = new EntityStates.SerializableEntityStateType(typeof(ThrowCart)),
+                activationStateMachineName = "Weapon",
+                interruptPriority = EntityStates.InterruptPriority.Skill,
+                baseRechargeInterval = 12f,
                 baseMaxStock = 1,
-                baseRechargeInterval = 10f,
-
+                rechargeStock = 1,
+                requiredStock = 1,
+                stockToConsume = 1,
+                resetCooldownTimerOnUse = false,
+                fullRestockOnAssign = true,
+                dontAllowPastMaxStocks = false,
+                mustKeyPress = true,
+                beginSkillCooldownOnSkillEnd = true,
                 isCombatSkill = true,
-                mustKeyPress = false,
+                canceledFromSprinting = false,
+                cancelSprintingOnActivation = true,
+                forceSprintDuringState = false,
             });
 
-            Skills.AddSpecialSkills(BodyPrefab, specialSkillDef1);
+            GenericSkill specialSkill = BodyPrefab.GetComponent<SkillLocator>().special;
+            Skills.AddSkillsToFamily(specialSkill.skillFamily, cartSkillDef);
+        }
+
+        private void SetupExtraSkills()
+        {
+            // 1. Создаем SkillFamily для дополнительного слота
+            var extraFirstFamily = ScriptableObject.CreateInstance<SkillFamily>();
+            // Обязательно задаем имя, игра использует его для сохранения лоадаутов
+            (extraFirstFamily as ScriptableObject).name = "DoormanBodyExtraFirstFamily";
+
+            // 2. Создаем SkillDef для способности, которая будет в этом слоте
+            // (например, для Ульты - Баронесса)
+            SkillDef ultimateSkillDef = Skills.CreateSkillDef(new SkillDefInfo
+            {
+                skillName = "DoormanUltimate",
+                skillNameToken = DOORMAN_PREFIX + "ULTIMATE_NAME",
+                skillDescriptionToken = DOORMAN_PREFIX + "ULTIMATE_DESCRIPTION",
+                skillIcon = null,
+                activationState = new EntityStates.SerializableEntityStateType(typeof(BaronessState)),
+                activationStateMachineName = "Weapon",
+                interruptPriority = EntityStates.InterruptPriority.Skill,
+                baseRechargeInterval = 15f, // Например, 15 секунд
+                baseMaxStock = 1,
+                rechargeStock = 1,
+                requiredStock = 1,
+                stockToConsume = 1,
+                resetCooldownTimerOnUse = false,
+                fullRestockOnAssign = true,
+                dontAllowPastMaxStocks = false,
+                mustKeyPress = true,
+                beginSkillCooldownOnSkillEnd = true,
+                isCombatSkill = true,
+                canceledFromSprinting = false,
+                cancelSprintingOnActivation = true,
+                forceSprintDuringState = false,
+            });
+
+            ContentAddition.AddSkillDef(ultimateSkillDef);
+
+            // 2. Регистрируем SkillFamily (заменяем LoadoutAPI на ContentAddition)
+            extraFirstFamily.variants = new SkillFamily.Variant[]
+            {
+                new SkillFamily.Variant { skillDef = ultimateSkillDef }
+            };
+            ContentAddition.AddSkillFamily(extraFirstFamily);
+
+            // 3. Создаем компонент GenericSkill для слота и привязываем к нему Family
+            var extraFirstSkill = BodyPrefab.AddComponent<GenericSkill>();
+            extraFirstSkill.SetFieldValue("_skillFamily", extraFirstFamily);
+
+            // 4. Добавляем ExtraSkillLocator и назначаем слот
+            var extraSkillLocator = BodyPrefab.AddComponent<ExtraSkillLocator>();
+            extraSkillLocator.extraFirst = extraFirstSkill;
         }
         #endregion skills
 
