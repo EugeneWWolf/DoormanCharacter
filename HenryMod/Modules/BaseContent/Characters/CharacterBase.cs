@@ -1,4 +1,4 @@
-﻿using RoR2;
+using RoR2;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -71,8 +71,6 @@ namespace DoormanMod.Modules.Characters
         public abstract void InitializeEntityStateMachines();
 
         public abstract void InitializeSkills();
-
-        public abstract void InitializeSkins();
 
         public abstract void InitializeCharacterMaster();
 

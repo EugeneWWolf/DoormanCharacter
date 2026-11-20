@@ -1,4 +1,4 @@
-﻿using BepInEx.Configuration;
+using BepInEx.Configuration;
 using RoR2;
 using UnityEngine;
 using System.Collections.Generic;
@@ -49,18 +49,6 @@ namespace DoormanMod.Modules.Characters
 
             CSSPreviewDisplayConroller.skillChangeResponses[indexFromEditor].triggerSkillFamily = skillFamily;
             CSSPreviewDisplayConroller.skillChangeResponses[indexFromEditor].triggerSkill = skillDef;
-        }
-
-        protected virtual void AddCssPreviewSkin(int indexFromEditor, SkinDef skinDef)
-        {
-            CharacterSelectSurvivorPreviewDisplayController CSSPreviewDisplayConroller = DisplayPrefab.GetComponent<CharacterSelectSurvivorPreviewDisplayController>();
-            if (!CSSPreviewDisplayConroller)
-            {
-                Log.Error("trying to add skinChangeResponse to null CharacterSelectSurvivorPreviewDisplayController.\nMake sure you created one on your Display prefab in editor");
-                return;
-            }
-
-            CSSPreviewDisplayConroller.skinChangeResponses[indexFromEditor].triggerSkin = skinDef;
         }
 
         protected virtual void FinalizeCSSPreviewDisplayController()

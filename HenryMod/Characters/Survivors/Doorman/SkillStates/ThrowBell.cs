@@ -1,34 +1,17 @@
-﻿using EntityStates;
-using RoR2;
-using RoR2.Projectile;
-using UnityEngine;
+using EntityStates;
 
 namespace DoormanMod.Survivors.Doorman.SkillStates
 {
     public class ThrowBell : GenericProjectileBaseState
     {
-        public static float BaseDuration = 0.5f;
-        public static float DamageCoefficient = 8f;
-
         public override void OnEnter()
         {
-            projectilePrefab = DoormanAssets.bellProjectilePrefab;
-            baseDuration = BaseDuration;
-            damageCoefficient = DamageCoefficient;
-            force = 40f;
-            recoilAmplitude = 0.05f;
+            projectilePrefab = DoormanAssets.BellProjectile;
+            baseDuration = 0.35f;
+            damageCoefficient = 8f;
             base.OnEnter();
         }
 
-        public override void ModifyProjectileInfo(ref FireProjectileInfo fireProjectileInfo)
-        {
-            base.ModifyProjectileInfo(ref fireProjectileInfo);
-            fireProjectileInfo.damageTypeOverride = DamageTypeCombo.GenericSpecial;
-        }
-
-        public override InterruptPriority GetMinimumInterruptPriority()
-        {
-            return InterruptPriority.Skill;
-        }
+        public override InterruptPriority GetMinimumInterruptPriority() => InterruptPriority.Skill;
     }
 }

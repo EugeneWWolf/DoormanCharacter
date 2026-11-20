@@ -1,99 +1,97 @@
-﻿using EntityStates;
+using EntityStates;
+using EntityStates.Commando.CommandoWeapon;
 using RoR2;
 using UnityEngine;
-using EntityStates.Commando.CommandoWeapon; // Временные эффекты Commando
+using UnityEngine.Networking;
 
 namespace DoormanMod.Survivors.Doorman.SkillStates
 {
     public class Shoot : BaseSkillState
     {
-        public static float BaseDuration = 0.2f; // Задержка между выстрелами (можно менять в EntityState, либо в SkillDef)
-        public static float DamageCoefficient = 1f; // Базовый урон (100%)
-
+        private const float Range = 256f;
         private float duration;
-        private Ray aimRay;
-
-        // Временные эффекты для теста (замени на свои позже)
-        public GameObject hitEffectPrefab = FireBarrage.hitEffectPrefab;
-        public GameObject tracerEffectPrefab = FireBarrage.tracerEffectPrefab;
+        private Ray aim;
+        private bool fired;
 
         public override void OnEnter()
         {
             base.OnEnter();
+            duration = 0.2f / attackSpeedStat;
+            if (isAuthority)
+                aim = GetAimRay();
 
-            // Рассчитываем длительность с учётом скорости атаки (attackSpeedStat)
-            this.duration = BaseDuration / base.attackSpeedStat;
-
-            // Получаем луч прицела игрока
-            this.aimRay = base.GetAimRay();
-
-            // Запускаем режим прицеливания (камера немного приближается)
-            base.StartAimMode(aimRay, 2f, false);
-
-            // Проигрываем анимацию (используем анимацию Commando "FirePistol, Right")
-            base.PlayAnimation("Gesture Additive, Right", "FirePistol, Right");
-
-            // Воспроизводим звук выстрела (пока от Commando)
-            Util.PlaySound(FireBarrage.fireBarrageSoundString, base.gameObject);
-
-            // Добавляем отдачу камеры (по желанию можно убрать)
-            base.AddRecoil(-0.6f, 0.6f, -0.6f, 0.6f);
-
-            // Спавним эффект вспышки на дуле оружия
-            if (FireBarrage.effectPrefab)
+            StartAimMode(2f);
+            PlayAnimation("Gesture Additive, Right", "FirePistol, Right");
+            if (!string.IsNullOrEmpty(FirePistol2.firePistolSoundString))
+                Util.PlaySound(FirePistol2.firePistolSoundString, gameObject);
+            if (FirePistol2.muzzleEffectPrefab)
             {
-                EffectManager.SimpleMuzzleFlash(FireBarrage.effectPrefab, base.gameObject, "MuzzleRight", false);
+                ChildLocator locator = GetModelChildLocator();
+                if (locator)
+                {
+                    string muzzle = locator.FindChild("MuzzleRight") ? "MuzzleRight" : "Muzzle";
+                    if (locator.FindChild(muzzle))
+                        EffectManager.SimpleMuzzleFlash(FirePistol2.muzzleEffectPrefab, gameObject, muzzle, false);
+                }
             }
-
-            // Самое главное: выпускаем пулю (только на сервере/хосте)
-            if (base.isAuthority)
-            {
-                FireBullet();
-            }
-        }
-
-        private void FireBullet()
-        {
-            new BulletAttack
-            {
-                owner = base.gameObject,
-                weapon = base.gameObject,
-                origin = this.aimRay.origin,
-                aimVector = this.aimRay.direction,
-                minSpread = 0f,
-                maxSpread = base.characterBody.spreadBloomAngle,
-                bulletCount = 1U,
-                procCoefficient = 1f,
-                damage = base.characterBody.damage * DamageCoefficient,
-                force = 3,
-                falloffModel = BulletAttack.FalloffModel.DefaultBullet,
-                tracerEffectPrefab = this.tracerEffectPrefab,
-                muzzleName = "MuzzleRight",
-                hitEffectPrefab = this.hitEffectPrefab,
-                isCrit = base.RollCrit(),
-                HitEffectNormal = false,
-                stopperMask = LayerIndex.world.mask,
-                smartCollision = true,
-                maxDistance = 300f
-            }.Fire();
         }
 
         public override void FixedUpdate()
         {
             base.FixedUpdate();
 
-            // Если время действия состояния истекло и мы на сервере — возвращаемся в обычное состояние (Main)
-            // Это позволяет стрелять очередями, если кнопка зажата (благодаря настройкам SkillDef)
-            if (base.fixedAge >= this.duration && base.isAuthority)
+            if (!fired && (isAuthority || NetworkServer.active) && aim.direction.sqrMagnitude > 0.001f)
             {
-                this.outer.SetNextStateToMain();
-                return;
+                fired = true;
+                bool hitBell = BellProjectile.TryShoot(gameObject, aim, Range);
+                if (isAuthority)
+                {
+                    AddRecoil(-0.6f, 0.6f, -0.6f, 0.6f);
+                    if (!hitBell)
+                        FireBullet();
+                }
             }
+
+            if (fixedAge >= duration && isAuthority)
+                outer.SetNextStateToMain();
         }
 
-        public override InterruptPriority GetMinimumInterruptPriority()
+        private void FireBullet()
         {
-            return InterruptPriority.Skill;
+            new BulletAttack
+            {
+                owner = gameObject,
+                weapon = gameObject,
+                origin = aim.origin,
+                aimVector = aim.direction,
+                bulletCount = 1,
+                damage = damageStat,
+                force = 5f,
+                procCoefficient = 1f,
+                isCrit = RollCrit(),
+                hitMask = LayerIndex.CommonMasks.bullet,
+                stopperMask = LayerIndex.CommonMasks.bullet,
+                falloffModel = BulletAttack.FalloffModel.DefaultBullet,
+                smartCollision = true,
+                maxDistance = Range,
+                hitEffectPrefab = FirePistol2.hitEffectPrefab,
+                tracerEffectPrefab = FirePistol2.tracerEffectPrefab
+            }.Fire();
         }
+
+        public override void OnSerialize(NetworkWriter writer)
+        {
+            base.OnSerialize(writer);
+            writer.Write(aim.origin);
+            writer.Write(aim.direction);
+        }
+
+        public override void OnDeserialize(NetworkReader reader)
+        {
+            base.OnDeserialize(reader);
+            aim = new Ray(reader.ReadVector3(), reader.ReadVector3());
+        }
+
+        public override InterruptPriority GetMinimumInterruptPriority() => InterruptPriority.PrioritySkill;
     }
 }

@@ -1,4 +1,4 @@
-﻿using BepInEx;
+using BepInEx;
 using DoormanMod.Survivors.Doorman;
 using R2API.Utils;
 using RoR2;
@@ -13,6 +13,7 @@ using System.Security.Permissions;
 namespace DoormanMod
 {
     //[BepInDependency("com.rune580.riskofoptions", BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(ExtraSkillSlots.ExtraSkillSlotsPlugin.GUID)]
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.EveryoneNeedSameModVersion)]
     [BepInPlugin(MODUID, MODNAME, MODVERSION)]
     public class DoormanPlugin : BaseUnityPlugin
@@ -22,7 +23,7 @@ namespace DoormanMod
         //   this shouldn't even have to be said
         public const string MODUID = "com.EugeneWWolf.DoormanMod";
         public const string MODNAME = "DoormanMod";
-        public const string MODVERSION = "1.0.0";
+        public const string MODVERSION = "1.1.7";
 
         // a prefix for name tokens to prevent conflicts- please capitalize all name tokens for convention
         public const string DEVELOPER_PREFIX = "SLD";

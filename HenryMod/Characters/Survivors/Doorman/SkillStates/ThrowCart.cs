@@ -1,49 +1,43 @@
-﻿using EntityStates;
-using DoormanMod.Survivors.Doorman;
-using RoR2;
+using EntityStates;
 using RoR2.Projectile;
 using UnityEngine;
 
 namespace DoormanMod.Survivors.Doorman.SkillStates
 {
-    public class ThrowCart : GenericProjectileBaseState
+    public class ThrowCart : BaseSkillState
     {
-        public static float BaseDuration = 0.4f;
-
-        public static float DamageCoefficient = 12f;
+        private float duration;
 
         public override void OnEnter()
         {
-            projectilePrefab = DoormanAssets.cartProjectilePrefab;
-            baseDuration = BaseDuration;
-            damageCoefficient = DamageCoefficient;
-            force = 30f;
             base.OnEnter();
-        }
+            duration = 0.35f / attackSpeedStat;
+            if (!isAuthority)
+                return;
 
-        public override void ModifyProjectileInfo(ref FireProjectileInfo fireProjectileInfo)
-        {
-            base.ModifyProjectileInfo(ref fireProjectileInfo);
-            fireProjectileInfo.damageTypeOverride = DamageTypeCombo.GenericSpecial;
+            Ray aim = GetAimRay();
+            Vector3 forward = Vector3.ProjectOnPlane(aim.direction, Vector3.up);
+            if (forward.sqrMagnitude < 0.001f)
+                forward = characterDirection.forward;
+
+            ProjectileManager.instance.FireProjectile(new FireProjectileInfo
+            {
+                projectilePrefab = DoormanAssets.CartProjectile,
+                owner = gameObject,
+                position = characterBody.footPosition + Vector3.up * 0.65f,
+                rotation = Quaternion.LookRotation(forward),
+                damage = damageStat * 6f,
+                crit = RollCrit()
+            });
         }
 
         public override void FixedUpdate()
         {
             base.FixedUpdate();
+            if (isAuthority && fixedAge >= duration)
+                outer.SetNextStateToMain();
         }
 
-        public override InterruptPriority GetMinimumInterruptPriority()
-        {
-            return InterruptPriority.Skill;
-        }
-
-        public override void PlayAnimation(float duration)
-        {
-
-            if (GetModelAnimator())
-            {
-                PlayAnimation("Gesture, Override", "ThrowBomb", "ThrowBomb.playbackRate", this.duration);
-            }
-        }
+        public override InterruptPriority GetMinimumInterruptPriority() => InterruptPriority.Skill;
     }
 }

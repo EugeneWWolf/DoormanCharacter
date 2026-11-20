@@ -260,3 +260,5 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+# Local reference supplied by the r2modman profile
+/lib/
